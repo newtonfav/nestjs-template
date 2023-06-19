@@ -1,26 +1,24 @@
 import {
   Controller,
   Get,
-  Res,
   Post,
-  Req,
   Body,
   Param,
-  Query,
   UsePipes,
   ValidationPipe,
+  HttpException,
+  HttpStatus,
 } from '@nestjs/common';
-import { Response, Request } from 'express';
 import { createUserDto } from 'src/users/dtos/CreateUser.dto';
+import { UsersService } from 'src/users/service/users/users.service';
 
 @Controller('users')
 export class UsersController {
+  constructor(private userService: UsersService) {}
+
   @Get()
-  getUser(@Query('sortBy') sortBy: string) {
-    console.log(sortBy);
-    return [
-      { name: 'Favour Oghenekohwo', email: 'gh.oghene@gmail.com', sortBy },
-    ];
+  getUser() {
+    return this.userService.fetchUsers();
   }
 
   @Get('posts')
@@ -41,17 +39,22 @@ export class UsersController {
   @Post('signup')
   @UsePipes(new ValidationPipe())
   createUser(@Body() userData: createUserDto) {
+    const data = this.userService.createUsers(userData);
     return {
       status: 'success',
-      data: userData,
+      data,
     };
   }
 
   @Get(':id')
-  getUserById(@Param('id') id: string) {
+  getUserById(@Param('id') id: number) {
+    const user = this.userService.fetchUserById(id);
+    if (!user) {
+      throw new HttpException('User not found!', HttpStatus.BAD_GATEWAY);
+    }
     return {
       status: 'success',
-      data: id,
+      data: user,
     };
   }
 }
